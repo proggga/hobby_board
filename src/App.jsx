@@ -614,6 +614,36 @@ export default function BoardComparisonApp() {
       onDragEnd={handleDragEnd}
     >
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-8">
+        
+        {/* Shared Data Banner */}
+        {pendingSharedData && (
+          <div className="fixed top-0 left-0 right-0 bg-blue-600 text-white z-50 animate-in slide-in-from-top duration-300 shadow-lg">
+            <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="text-yellow-300" size={24} />
+                <div>
+                  <p className="font-bold">Shared Board Detected!</p>
+                  <p className="text-sm text-blue-100">Loading this will replace your current board. Do you want to proceed?</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  onClick={handleCancelSharedBoard}
+                  className="px-4 py-1.5 bg-blue-700 hover:bg-blue-800 rounded-lg text-sm font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleLoadSharedBoard}
+                  className="px-4 py-1.5 bg-white text-blue-600 hover:bg-blue-50 rounded-lg text-sm font-bold shadow-sm transition-colors"
+                >
+                  Load Board
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="max-w-full mx-auto">
           <div className="flex justify-between items-center mb-8">
             <div className="flex items-center gap-4">
