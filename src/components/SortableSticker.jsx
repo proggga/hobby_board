@@ -3,7 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { X, GripHorizontal, Palette } from 'lucide-react';
 
-export function SortableSticker({ sticker, listId, subListId, colors, onDelete, onUpdate, autoFocus }) {
+export function SortableSticker({ sticker, listId, subListId, colors, onDelete, onUpdate, autoFocus, onEdit }) {
   const {
     attributes,
     listeners,
@@ -74,6 +74,7 @@ export function SortableSticker({ sticker, listId, subListId, colors, onDelete, 
     if (e.key === 'Enter') {
       handleBlur();
     }
+    e.stopPropagation();
   };
 
   return (

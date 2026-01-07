@@ -5,7 +5,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { X, Trash2, Plus, GripVertical } from 'lucide-react';
 import { SortableSubList } from './SortableSubList';
 
-export function SortableList({ list, colors, onDelete, onUpdateName, onUpdateWidth, onAddSubList, onDeleteSubList, onUpdateSubListName, onUpdateSubListColor, onAddSticker, onDeleteSticker, onUpdateSticker, newlyCreatedStickerId }) {
+export function SortableList({ list, colors, onDelete, onUpdateName, onUpdateWidth, onAddSubList, onDeleteSubList, onUpdateSubListName, onUpdateSubListColor, onAddSticker, onDeleteSticker, onUpdateSticker, newlyCreatedStickerId, onEditSticker }) {
   const {
     attributes,
     listeners,
@@ -82,6 +82,7 @@ export function SortableList({ list, colors, onDelete, onUpdateName, onUpdateWid
     if (e.key === 'Enter') {
       setIsEditing(false);
     }
+    e.stopPropagation();
   };
 
   return (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, X, Trash2, Save, Upload, HelpCircle, FileText, Download, Share2 } from 'lucide-react';
+import { Plus, X, Trash2, Save, Upload, HelpCircle, Download, Share2 } from 'lucide-react';
 import LZString from 'lz-string';
 import {
   DndContext,
@@ -24,6 +24,88 @@ import { SortableSubList } from './components/SortableSubList';
 import { SortableSticker } from './components/SortableSticker';
 import { StickerEditorModal } from './components/StickerEditorModal';
 
+const DEFAULT_BOARD_DATA = [
+  {
+    id: 'list-1',
+    name: 'Option A',
+    color: 'bg-blue-100',
+    subLists: [
+      {
+        id: 'sub-1',
+        name: 'Equipment',
+        color: 'bg-yellow-200',
+        stickers: [
+          { id: 'sticker-1', name: 'Laptop', price: 1200, description: 'High performance laptop' },
+          { id: 'sticker-2', name: 'Monitor', price: 300, description: '27-inch 4K' }
+        ]
+      },
+      {
+        id: 'sub-2',
+        name: 'Software',
+        color: 'bg-pink-200',
+        stickers: [
+          { id: 'sticker-3', name: 'Adobe Suite', price: 600, description: 'Creative Cloud All Apps' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'list-2',
+    name: 'Option B',
+    color: 'bg-green-100',
+    subLists: [
+      {
+        id: 'sub-3',
+        name: 'Equipment',
+        color: 'bg-purple-200',
+        stickers: [
+          { id: 'sticker-4', name: 'Desktop', price: 1500, description: 'Gaming PC' },
+          { id: 'sticker-5', name: 'Dual Monitors', price: 600, description: 'Two 24-inch screens' }
+        ]
+      }
+    ]
+  }
+];
+
+const isStructureEqual = (boardA, boardB) => {
+  if (!boardA || !boardB) return false;
+  if (boardA.length !== boardB.length) return false;
+  
+  return boardA.every((listA, i) => {
+    const listB = boardB[i];
+    if (listA.name !== listB.name) return false;
+    if (listA.subLists.length !== listB.subLists.length) return false;
+    
+    return listA.subLists.every((subA, j) => {
+      const subB = listB.subLists[j];
+      if (subA.name !== subB.name) return false;
+      if (subA.stickers.length !== subB.stickers.length) return false;
+      
+      return subA.stickers.every((stickerA, k) => {
+        const stickerB = subB.stickers[k];
+        return stickerA.name === stickerB.name && Number(stickerA.price) === Number(stickerB.price);
+      });
+    });
+  });
+};
+
+const generateId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+const createFreshBoard = (template) => {
+  return template.map(list => ({
+    ...list,
+    id: generateId('list'),
+    subLists: list.subLists.map(subList => ({
+      ...subList,
+      id: generateId('sub'),
+      stickers: subList.stickers.map(sticker => ({
+        ...sticker,
+        id: generateId('sticker')
+      }))
+    }))
+  }));
+};
+
 export default function BoardComparisonApp() {
   // Terminology:
   // Board -> The whole page (App)
@@ -33,93 +115,56 @@ export default function BoardComparisonApp() {
 
   const [lists, setLists] = useState(() => {
     const saved = localStorage.getItem('boardData');
-    let initialData = saved ? JSON.parse(saved) : [
-      {
-        id: 'list-1',
-        name: 'Option A',
-        color: 'bg-blue-100',
-        subLists: [
-          {
-            id: 'sub-1',
-            name: 'Equipment',
-            color: 'bg-yellow-200',
-            stickers: [
-              { id: 'sticker-1', name: 'Laptop', price: 1200, description: 'High performance laptop' },
-              { id: 'sticker-2', name: 'Monitor', price: 300, description: '27-inch 4K' }
-            ]
-          },
-          {
-            id: 'sub-2',
-            name: 'Software',
-            color: 'bg-pink-200',
-            stickers: [
-              { id: 'sticker-3', name: 'Adobe Suite', price: 600, description: 'Creative Cloud All Apps' }
-            ]
-          }
-        ]
-      },
-      {
-        id: 'list-2',
-        name: 'Option B',
-        color: 'bg-green-100',
-        subLists: [
-          {
-            id: 'sub-3',
-            name: 'Equipment',
-            color: 'bg-purple-200',
-            stickers: [
-              { id: 'sticker-4', name: 'Desktop', price: 1500, description: 'Gaming PC' },
-              { id: 'sticker-5', name: 'Dual Monitors', price: 600, description: 'Two 24-inch screens' }
-            ]
-          }
-        ]
-      }
-    ];
-
-    // Safety check for duplicate IDs which breaks dnd-kit
-    const seenIds = new Set();
-    const ensureUniqueId = (prefix) => {
-      let newId = `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
-      while (seenIds.has(newId)) {
-        newId = `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
-      }
-      seenIds.add(newId);
-      return newId;
-    };
-
-    // Traverse and fix IDs if they are just numbers or duplicates
-    initialData = initialData.map(list => {
-      const listId = seenIds.has(String(list.id)) ? ensureUniqueId('list') : String(list.id);
-      seenIds.add(listId);
+    if (saved) {
+      let initialData = JSON.parse(saved);
       
-      return {
-        ...list,
-        id: listId,
-        width: list.width || 320, // Ensure width exists
-        subLists: list.subLists.map(subList => {
-          const subListId = seenIds.has(String(subList.id)) ? ensureUniqueId('sub') : String(subList.id);
-          seenIds.add(subListId);
-
-          return {
-            ...subList,
-            id: subListId,
-            stickers: subList.stickers.map(sticker => {
-              const stickerId = seenIds.has(String(sticker.id)) ? ensureUniqueId('sticker') : String(sticker.id);
-              seenIds.add(stickerId);
-              return { ...sticker, id: stickerId };
-            })
-          };
-        })
+      // Safety check for duplicate IDs which breaks dnd-kit
+      const seenIds = new Set();
+      const ensureUniqueId = (prefix) => {
+        let newId = `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
+        while (seenIds.has(newId)) {
+          newId = `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
+        }
+        seenIds.add(newId);
+        return newId;
       };
-    });
 
-    return initialData;
+      // Traverse and fix IDs if they are just numbers or duplicates
+      initialData = initialData.map(list => {
+        const listId = seenIds.has(String(list.id)) ? ensureUniqueId('list') : String(list.id);
+        seenIds.add(listId);
+        
+        return {
+          ...list,
+          id: listId,
+          width: list.width || 320, // Ensure width exists
+          subLists: list.subLists.map(subList => {
+            const subListId = seenIds.has(String(subList.id)) ? ensureUniqueId('sub') : String(subList.id);
+            seenIds.add(subListId);
+
+            return {
+              ...subList,
+              id: subListId,
+              stickers: subList.stickers.map(sticker => {
+                const stickerId = seenIds.has(String(sticker.id)) ? ensureUniqueId('sticker') : String(sticker.id);
+                seenIds.add(stickerId);
+                return { ...sticker, id: stickerId };
+              })
+            };
+          })
+        };
+      });
+      return initialData;
+    }
+    
+    return createFreshBoard(DEFAULT_BOARD_DATA);
   });
 
   const [activeId, setActiveId] = useState(null);
   const [activeItem, setActiveItem] = useState(null);
   const [newlyCreatedStickerId, setNewlyCreatedStickerId] = useState(null);
   const [editingSticker, setEditingSticker] = useState(null);
+  const [pendingSharedData, setPendingSharedData] = useState(null);
   
   const [showHelp, setShowHelp] = useState(false);
   const fileInputRef = useRef(null);
@@ -132,16 +177,66 @@ export default function BoardComparisonApp() {
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
+      keyboardCodes: {
+        start: ['Space', 'Enter'],
+        cancel: ['Escape'],
+        end: ['Space', 'Enter'],
+      },
+      onActivation: (event) => {
+        // Prevent activation if focusing on an input
+        if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+          return false;
+        }
+      }
     })
   );
 
   useEffect(() => {
+    console.log('Board Comparison App v1.6 loaded');
     localStorage.setItem('boardData', JSON.stringify(lists));
   }, [lists]);
 
-  const colors = ['bg-yellow-200', 'bg-pink-200', 'bg-blue-200', 'bg-green-200', 'bg-purple-200', 'bg-orange-200', 'bg-red-200', 'bg-teal-200'];
+  // Handle URL Query Params for Shared Boards
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sharedData = params.get('data');
+    
+    if (sharedData) {
+      try {
+        const decompressed = LZString.decompressFromEncodedURIComponent(sharedData);
+        if (decompressed) {
+          const parsedData = JSON.parse(decompressed);
+          
+          // Auto-load if the current board is empty or matches the default structure
+          if (lists.length === 0 || isStructureEqual(lists, DEFAULT_BOARD_DATA)) {
+            setLists(parsedData);
+          } else {
+            setPendingSharedData(parsedData);
+          }
+          
+          // Clean up the URL so refreshing doesn't trigger it again
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } else {
+          console.error('Failed to decompress data');
+        }
+      } catch (error) {
+        console.error('Error parsing shared data:', error);
+      }
+    }
+  }, []);
 
-  const generateId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const handleLoadSharedBoard = () => {
+    if (pendingSharedData) {
+      setLists(pendingSharedData);
+      setPendingSharedData(null);
+    }
+  };
+
+  const handleCancelSharedBoard = () => {
+    setPendingSharedData(null);
+  };
+
+  const colors = ['bg-yellow-200', 'bg-pink-200', 'bg-blue-200', 'bg-green-200', 'bg-purple-200', 'bg-orange-200', 'bg-red-200', 'bg-teal-200'];
 
   const addList = () => {
     const newList = {
@@ -156,46 +251,7 @@ export default function BoardComparisonApp() {
 
   const resetBoard = () => {
     if (window.confirm('Are you sure you want to create a new board? This will delete all current data.')) {
-      const newId1 = generateId('list');
-      const newId2 = generateId('list');
-      const subId1 = generateId('sub');
-      const subId2 = generateId('sub');
-      
-      setLists([
-        {
-          id: newId1,
-          name: 'Option 1',
-          color: 'bg-blue-100',
-          width: 320,
-          subLists: [
-            {
-              id: subId1,
-              name: 'Basics',
-              color: 'bg-yellow-200',
-              stickers: [
-                { id: generateId('sticker'), name: 'Item A', price: 100, color: 'bg-yellow-200' },
-                { id: generateId('sticker'), name: 'Item B', price: 50, color: 'bg-yellow-200' }
-              ]
-            }
-          ]
-        },
-        {
-          id: newId2,
-          name: 'Option 2',
-          color: 'bg-green-100',
-          width: 320,
-          subLists: [
-            {
-              id: subId2,
-              name: 'Basics',
-              color: 'bg-pink-200',
-              stickers: [
-                { id: generateId('sticker'), name: 'Item A', price: 120, color: 'bg-pink-200' }
-              ]
-            }
-          ]
-        }
-      ]);
+      setLists(createFreshBoard(DEFAULT_BOARD_DATA));
     }
   };
 
@@ -620,9 +676,9 @@ export default function BoardComparisonApp() {
           <div className="fixed top-0 left-0 right-0 bg-blue-600 text-white z-50 animate-in slide-in-from-top duration-300 shadow-lg">
             <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <AlertTriangle className="text-yellow-300" size={24} />
+                <HelpCircle className="text-yellow-300" size={24} />
                 <div>
-                  <p className="font-bold">Shared Board Detected!</p>
+                  <p className="font-bold">Shared Board Detected (v1.5)!</p>
                   <p className="text-sm text-blue-100">Loading this will replace your current board. Do you want to proceed?</p>
                 </div>
               </div>
@@ -647,7 +703,7 @@ export default function BoardComparisonApp() {
         <div className="max-w-full mx-auto">
           <div className="flex justify-between items-center mb-8">
             <div className="flex items-center gap-4">
-              <h1 className="text-4xl font-bold text-gray-800">Board Comparison</h1>
+              <h1 className="text-4xl font-bold text-gray-800">Board Comparison v1.6</h1>
               <button 
                 onClick={() => setShowHelp(true)}
                 className="p-2 text-gray-500 hover:text-gray-700 bg-white rounded-full shadow-sm hover:shadow-md transition-all"
@@ -738,6 +794,7 @@ export default function BoardComparisonApp() {
                         onAddSticker={() => {}}
                         onDeleteSticker={() => {}}
                         onUpdateSticker={() => {}}
+                        onEditSticker={() => {}}
                     />
                 ) : activeItem.type === 'sublist' ? (
                     <SortableSubList
@@ -750,6 +807,7 @@ export default function BoardComparisonApp() {
                         onAddSticker={() => {}}
                         onDeleteSticker={() => {}}
                         onUpdateSticker={() => {}}
+                        onEditSticker={() => {}}
                     />
                 ) : activeItem.type === 'sticker' ? (
                      <SortableSticker
@@ -760,6 +818,7 @@ export default function BoardComparisonApp() {
                         colors={colors}
                         onDelete={() => {}}
                         onUpdate={() => {}}
+                        onEdit={() => {}}
                     />
                 ) : null
             ) : null}

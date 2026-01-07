@@ -5,7 +5,7 @@ import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import { X, Plus, Palette, GripVertical } from 'lucide-react';
 import { SortableSticker } from './SortableSticker';
 
-export function SortableSubList({ subList, listId, colors, onDelete, onUpdateName, onUpdateColor, onAddSticker, onDeleteSticker, onUpdateSticker, newlyCreatedStickerId }) {
+export function SortableSubList({ subList, listId, colors, onDelete, onUpdateName, onUpdateColor, onAddSticker, onDeleteSticker, onUpdateSticker, newlyCreatedStickerId, onEditSticker }) {
   const {
     attributes,
     listeners,
@@ -51,6 +51,7 @@ export function SortableSubList({ subList, listId, colors, onDelete, onUpdateNam
     if (e.key === 'Enter') {
       setIsEditing(false);
     }
+    e.stopPropagation();
   };
 
   return (
