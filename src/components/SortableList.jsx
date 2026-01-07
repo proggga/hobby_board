@@ -157,6 +157,7 @@ export function SortableList({ list, colors, onDelete, onUpdateName, onUpdateWid
               onDeleteSticker={onDeleteSticker}
               onUpdateSticker={onUpdateSticker}
               newlyCreatedStickerId={newlyCreatedStickerId}
+              onEditSticker={onEditSticker}
             />
           ))}
         </SortableContext>

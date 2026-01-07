@@ -22,6 +22,7 @@ import {
 import { SortableList } from './components/SortableList';
 import { SortableSubList } from './components/SortableSubList';
 import { SortableSticker } from './components/SortableSticker';
+import { StickerEditorModal } from './components/StickerEditorModal';
 
 export default function BoardComparisonApp() {
   // Terminology:
@@ -118,6 +119,7 @@ export default function BoardComparisonApp() {
   const [activeId, setActiveId] = useState(null);
   const [activeItem, setActiveItem] = useState(null);
   const [newlyCreatedStickerId, setNewlyCreatedStickerId] = useState(null);
+  const [editingSticker, setEditingSticker] = useState(null);
   
   const [showHelp, setShowHelp] = useState(false);
   const fileInputRef = useRef(null);
@@ -392,7 +394,36 @@ export default function BoardComparisonApp() {
   };
 
   const openStickerDetails = (listId, subList, sticker) => {
-    setSelectedSticker({ ...sticker, listId, subListId: subList.id });
+    // Legacy function, replaced by handleEditSticker but kept if needed or can be removed
+    setEditingSticker({ ...sticker, listId, subListId: subList.id });
+  };
+
+  const handleEditSticker = (listId, subListId, sticker) => {
+    setEditingSticker({ ...sticker, listId, subListId });
+  };
+
+  const handleSaveSticker = (updatedSticker) => {
+    const { listId, subListId } = editingSticker;
+    setLists(lists.map(list => {
+      if (list.id === listId) {
+        return {
+          ...list,
+          subLists: list.subLists.map(subList => {
+            if (subList.id === subListId) {
+              return {
+                ...subList,
+                stickers: subList.stickers.map(s => 
+                  s.id === updatedSticker.id ? updatedSticker : s
+                )
+              };
+            }
+            return subList;
+          })
+        };
+      }
+      return list;
+    }));
+    setEditingSticker(null);
   };
 
   // Drag and Drop Logic
@@ -648,6 +679,7 @@ export default function BoardComparisonApp() {
                   onDeleteSticker={deleteSticker}
                   onUpdateSticker={updateSticker}
                   newlyCreatedStickerId={newlyCreatedStickerId}
+                  onEditSticker={handleEditSticker}
                 />
               ))}
             </SortableContext>
@@ -702,6 +734,15 @@ export default function BoardComparisonApp() {
                 ) : null
             ) : null}
           </DragOverlay>
+
+          {/* Sticker Edit Modal */}
+          {editingSticker && (
+            <StickerEditorModal
+              sticker={editingSticker}
+              onClose={() => setEditingSticker(null)}
+              onSave={handleSaveSticker}
+            />
+          )}
 
           {/* Help Modal */}
           {showHelp && (

@@ -82,6 +82,10 @@ export function SortableSticker({ sticker, listId, subListId, colors, onDelete, 
       style={style}
       {...attributes}
       {...listeners}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        onEdit && onEdit(listId, subListId, sticker);
+      }}
       className={`${sticker.color || 'bg-white/60'} rounded-lg px-3 py-2 shadow-sm transform hover:scale-[1.02] transition-all relative group hover:shadow-md backdrop-blur-sm border border-transparent hover:border-black/5 ${showColorPicker ? 'z-50' : ''}`}
     >
       <div className="flex items-center justify-between gap-3">
@@ -99,16 +103,32 @@ export function SortableSticker({ sticker, listId, subListId, colors, onDelete, 
               onPointerDown={(e) => e.stopPropagation()}
             />
           ) : (
-            <div 
-              className="font-medium truncate text-sm text-gray-800 cursor-text rounded px-1 -mx-1"
-              onDoubleClick={(e) => {
-                // dnd-kit listeners are on the parent, so we need to stop propagation here to prevent dragging?
-                // actually double click event is fine. 
-                setEditingField('name');
-              }}
-            >
-              {sticker.name}
-            </div>
+            sticker.link ? (
+              <a 
+                href={sticker.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium truncate text-sm text-blue-700 hover:text-blue-900 hover:underline cursor-pointer rounded px-1 -mx-1 block"
+                title={sticker.description || sticker.link}
+                onDoubleClick={(e) => {
+                  setEditingField('name');
+                }}
+                onPointerDown={(e) => e.stopPropagation()} // Allow clicking without dragging immediately
+                onClick={(e) => e.stopPropagation()}
+              >
+                {sticker.name}
+              </a>
+            ) : (
+              <div 
+                className="font-medium truncate text-sm text-gray-800 cursor-text rounded px-1 -mx-1"
+                onDoubleClick={(e) => {
+                  setEditingField('name');
+                }}
+                title={sticker.description}
+              >
+                {sticker.name}
+              </div>
+            )
           )}
         </div>
 

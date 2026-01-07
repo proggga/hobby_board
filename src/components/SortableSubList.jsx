@@ -148,6 +148,7 @@ export function SortableSubList({ subList, listId, colors, onDelete, onUpdateNam
               onDelete={onDeleteSticker}
               onUpdate={onUpdateSticker}
               autoFocus={newlyCreatedStickerId === sticker.id}
+              onEdit={onEditSticker}
             />
           ))}
         </SortableContext>
