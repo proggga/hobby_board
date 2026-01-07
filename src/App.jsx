@@ -342,6 +342,24 @@ export default function BoardComparisonApp() {
     }));
   };
 
+  const handleShare = () => {
+    try {
+      const dataStr = JSON.stringify(lists);
+      const compressed = LZString.compressToEncodedURIComponent(dataStr);
+      const url = `${window.location.origin}${window.location.pathname}?data=${compressed}`;
+      
+      navigator.clipboard.writeText(url).then(() => {
+        alert('Shareable link copied to clipboard!');
+      }, (err) => {
+        console.error('Could not copy text: ', err);
+        prompt('Copy this link:', url);
+      });
+    } catch (error) {
+      console.error('Error generating share link:', error);
+      alert('Failed to generate share link.');
+    }
+  };
+
   const handleSaveToFile = () => {
     const filename = prompt('Enter filename to save:', 'board-data');
     if (!filename) return;
